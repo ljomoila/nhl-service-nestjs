@@ -1,18 +1,18 @@
 import { Body, Controller, Get, Post } from "@nestjs/common";
 import { TeamsService } from "./teams.service";
-import { CreateTeamDto } from "./dto/team.dto";
+import { CreateTeamDTO, TeamDTO } from "./dto/team.dto";
 
 @Controller("teams")
 export class TeamsController {
   constructor(private readonly service: TeamsService) {}
 
   @Post()
-  create(@Body() dto: CreateTeamDto) {
+  create(@Body() dto: CreateTeamDTO) {
     return this.service.create(dto);
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  async findAll(): Promise<TeamDTO[]> {
+    return await this.service.findAll();
   }
 }

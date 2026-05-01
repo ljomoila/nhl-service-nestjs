@@ -41,6 +41,11 @@ describe("TeamsController", () => {
       .expect(200);
 
     expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBeGreaterThan(0);
+    expect(response.body[0]).toEqual({
+      id: expect.any(String),
+      name: "Toronto Maple Leafs",
+      value: "NHL Team",
+      createdAt: expect.any(String),
+    });
   });
 });
