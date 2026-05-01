@@ -13,12 +13,6 @@ export class TeamsService {
   }
 
   async findAll() {
-    console.log(
-      "RAW QUERY RESULT:",
-      await this.prisma
-        .$queryRaw`SELECT name FROM sqlite_master WHERE type='table';`,
-    );
-
     return this.prisma.team.findMany({
       orderBy: { createdAt: "desc" },
     });
