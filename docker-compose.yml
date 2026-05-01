@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  nhl-api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./dev.db:/app/dev.db
