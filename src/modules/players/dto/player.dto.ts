@@ -3,51 +3,51 @@ import { PlayerType } from "@prisma/client";
 import { IsNumber, IsString, IsUUID } from "class-validator";
 
 export class PlayerDTO {
-  @ApiProperty()
+  @ApiProperty({ description: "Player's unique identifier (UUID)" })
   @IsUUID()
   public id: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Player's NHL unique identifier" })
   @IsNumber()
   public nhlId: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Player's full name" })
   @IsString()
   public fullName: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Player's first name" })
   @IsString()
   public firstName: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Player's last name" })
   @IsString()
   public lastName: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Player's nationality" })
   @IsString()
   public nationality: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Player's type" })
   @IsString()
   public playerType: PlayerType;
 }
 
 export class PlayerWithSeasonStatsDTO extends PlayerDTO {
-  @ApiProperty()
+  @ApiProperty({ description: "Number of games played in the season" })
   public gamesPlayed: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Number of goals scored in the season" })
   public goals: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Number of assists in the season" })
   public assists: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Total points in the season" })
   public points: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Total penalty minutes in the season" })
   public penaltyMinutes: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Plus/minus rating in the season" })
   public plusMinus: number;
 }

@@ -3,26 +3,31 @@ import { IsDate, IsString, IsUUID } from "class-validator";
 import { PlayerDTO } from "src/modules/players/dto/player.dto";
 
 export class TeamDTO {
-  @ApiProperty()
+  @ApiProperty({ description: "Team's unique identifier (UUID)" })
   @IsUUID()
   public id: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Team's name" })
   @IsString()
   public name: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Team's short name" })
   @IsString()
   public shortName: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: "Team's abbreviation" })
   @IsString()
   public abbreviation: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: "Date when the team was created in the local DB",
+  })
   @IsDate()
   public createdAt: Date;
 
-  @ApiProperty({ type: () => [PlayerDTO] })
+  @ApiProperty({
+    description: "List of players in the team",
+    type: () => [PlayerDTO],
+  })
   public players: PlayerDTO[];
 }

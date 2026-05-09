@@ -1,11 +1,15 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { PlayerType, Team } from "@prisma/client";
 import { NhlService } from "src/modules/integrations/nhl.service";
 import { PrismaService } from "src/prisma/prisma.service";
 
+/**
+ * SyncService is responsible for synchronizing teams and players data from the NHL API to our local database.
+ * It syncs data that is not easily retrievable from the NHL API on a per-game basis, such as team and player information.
+ */
 @Injectable()
-export class SyncService {
+export class SyncService implements OnModuleInit {
   private readonly logger = new Logger(SyncService.name);
 
   constructor(
@@ -13,6 +17,15 @@ export class SyncService {
     private readonly nhlService: NhlService,
   ) {
     this.logger.log("SyncService initialized");
+  }
+
+  public async onModuleInit() {
+    const teams = await this.prisma.team.findMany();
+
+    if (teams.length === 0) {
+      this.logger.log("No teams found in database, performing initial sync...");
+      await this.doTeamsSync();
+    }
   }
 
   /**
