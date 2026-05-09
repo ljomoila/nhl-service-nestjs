@@ -1,17 +1,21 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Inject,
+} from "@nestjs/common";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@prisma/client";
 import path from "path";
 import fs from "fs";
-
-const connectionString = `${process.env.DATABASE_URL}`;
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
 
 @Injectable()
 export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
-  constructor() {
+  constructor(@Inject(CACHE_MANAGER) private cache: Cache) {
     const dbPath = path.resolve(process.cwd(), "prisma", "dev.db");
 
     if (!fs.existsSync(dbPath)) {
@@ -23,6 +27,31 @@ export class PrismaService
     const adapter = new PrismaBetterSqlite3({ url: dbPath });
 
     super({ adapter });
+
+    // Extend PrismaClient to add cache invalidation hooks
+    return this.$extends({
+      query: {
+        team: {
+          async create({ args, query }) {
+            const result = await query(args);
+            await cache.del("teams:all");
+            return result;
+          },
+
+          async update({ args, query }) {
+            const result = await query(args);
+            await cache.del("teams:all");
+            return result;
+          },
+
+          async delete({ args, query }) {
+            const result = await query(args);
+            await cache.del("teams:all");
+            return result;
+          },
+        },
+      },
+    }) as any;
   }
 
   async onModuleInit() {

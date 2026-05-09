@@ -1,6 +1,6 @@
 import { Test } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
-import { AppModule } from "../app.module";
+import { AppModule } from "../../app.module";
 import request from "supertest";
 
 describe("TeamsController", () => {

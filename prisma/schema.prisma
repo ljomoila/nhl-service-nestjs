@@ -11,9 +11,36 @@ datasource db {
   provider = "sqlite"
 }
 
+enum PlayerType {
+  Skater
+  Goalie
+}
+
 model Team {
-  id        String   @id @default(uuid())
-  name      String
-  value     String
-  createdAt DateTime @default(now())
+  id           String   @default(uuid())
+  name         String
+  shortName    String
+  abbreviation String   @id @unique
+  createdAt    DateTime @default(now())
+
+  players Player[] // 👈 relation field
+
+  @@index([abbreviation])
+}
+
+model Player {
+  id          String     @default(uuid())
+  nhlId       Int        @id @unique
+  fullName    String
+  firstName   String
+  lastName    String
+  nationality String
+  playerType  PlayerType
+  createdAt   DateTime   @default(now())
+
+  teamId String // 👈 foreign key
+  team   Team   @relation(fields: [teamId], references: [abbreviation])
+
+  @@index([nhlId])
+  @@index([teamId])
 }

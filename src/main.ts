@@ -2,7 +2,7 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
 import { Logger } from "nestjs-pino";
-import { AllExceptionsFilter } from "./filters/all-exceptions.filter";
+import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 import { setupSwagger } from "./swagger/swagger";
 
 async function bootstrap() {
