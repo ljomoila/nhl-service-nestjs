@@ -1,6 +1,10 @@
 import { Controller, Get, Param } from "@nestjs/common";
 
-import { ApiNotFoundResponse, ApiOkResponse } from "@nestjs/swagger";
+import {
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+} from "@nestjs/swagger";
 import { GamesService } from "./games.service";
 import { GameBoxscoreDTO } from "./dto/games";
 
@@ -14,6 +18,7 @@ export class GamesController {
     type: [GameBoxscoreDTO],
   })
   @ApiNotFoundResponse({ description: "No games found for the specified date" })
+  @ApiInternalServerErrorResponse()
   async getGamesByDate(
     @Param("date") date: string,
   ): Promise<GameBoxscoreDTO[]> {

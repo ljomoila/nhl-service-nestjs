@@ -8,7 +8,7 @@ import {
 } from "./dto/games";
 import { PrismaService } from "src/prisma/prisma.service";
 import {
-  NhlBoxScore,
+  NhlBoxscore,
   NhlBoxscorePlayers,
   NhlBoxscorePlayerStats,
   NhlBoxscoreTeam,
@@ -21,21 +21,12 @@ export class GamesService {
     private readonly prismaService: PrismaService,
   ) {}
 
-  async getGamesByDate(date: string): Promise<GameBoxscoreDTO[]> {
-    const gameIds = await this.nhlService.getGameIdsByDate(date);
-
-    const games: NhlBoxScore[] = [];
-    for (const gameId of gameIds) {
-      games.push(await this.nhlService.getGameBoxscore(gameId));
-    }
+  public async getGamesByDate(date: string): Promise<GameBoxscoreDTO[]> {
+    const games = await this.nhlService.getGamesByDate(date);
 
     const gamesWithBoxScore: GameBoxscoreDTO[] = [];
-
     for (const game of games) {
-      const gameBoxscore = new GameBoxscoreDTO();
-      gameBoxscore.gameId = game.id;
-      gameBoxscore.period = game.gameState === "Final" ? 3 : 1;
-      gameBoxscore.timeRemaining = game.clock.timeRemaining;
+      const gameBoxscore = this.buildGameBoxscoreDTO(game) as GameBoxscoreDTO;
       gameBoxscore.homeTeam = await this.buildTeamDTO(game.homeTeam);
       gameBoxscore.homeTeam.players = await this.buildTeamPlayers(
         game.playerByGameStats.homeTeam,
@@ -50,6 +41,14 @@ export class GamesService {
     return gamesWithBoxScore;
   }
 
+  private buildGameBoxscoreDTO(game: NhlBoxscore): Partial<GameBoxscoreDTO> {
+    return {
+      gameId: game.id,
+      period: game.gameState === "Final" ? 3 : 1,
+      timeRemaining: game.clock.timeRemaining,
+    };
+  }
+
   private async buildTeamDTO(nhlTeam: NhlBoxscoreTeam): Promise<GameTeamDTO> {
     return {
       id: nhlTeam.id,
@@ -60,7 +59,7 @@ export class GamesService {
     };
   }
 
-  async buildTeamPlayers(
+  private async buildTeamPlayers(
     players: NhlBoxscorePlayers,
   ): Promise<GamePlayerStatsDTO[]> {
     const playersWithStats: GamePlayerStatsDTO[] = [];
@@ -107,7 +106,7 @@ export class GamesService {
     return playersWithStats;
   }
 
-  buildPlayerStatsDTO(
+  private buildPlayerStatsDTO(
     player: NhlBoxscorePlayerStats,
   ): GamePlayerStatsDTO | GameGoalieStatsDTO {
     return {

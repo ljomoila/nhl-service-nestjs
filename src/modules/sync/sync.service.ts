@@ -15,9 +15,7 @@ export class SyncService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly nhlService: NhlService,
-  ) {
-    this.logger.log("SyncService initialized");
-  }
+  ) {}
 
   public async onModuleInit() {
     const teams = await this.prisma.team.findMany();
@@ -30,7 +28,8 @@ export class SyncService implements OnModuleInit {
 
   /**
    * Cron job to sync teams and players from the NHL API every day at midnight.
-   * This will ensure that our database stays up to date with the latest information from the NHL.
+   * This will ensure that database stays up to date with the latest information from the NHL
+   * and allows us to have all the necessary data for our application without having to make multiple API calls on a per-game basis.
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async syncTeams(): Promise<void> {

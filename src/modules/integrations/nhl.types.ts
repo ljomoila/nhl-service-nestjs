@@ -1,5 +1,21 @@
 export type PlayerPosition = "C" | "L" | "R" | "D" | "G";
 
+export type NhlTeam = {
+  teamAbbrev: {
+    default: string;
+  };
+  teamName: {
+    default: string;
+  };
+  teamCommonName: {
+    default: string;
+  };
+};
+
+export type NhlNow = {
+  standings: NhlTeam[];
+};
+
 export type NhlBoxscoreTeam = {
   id: number;
   abbrev: string;
@@ -34,7 +50,7 @@ export type NhlBoxscorePlayers = {
   goalies: NhlBoxscoreGoalieStats[];
 };
 
-export type NhlBoxScore = {
+export type NhlBoxscore = {
   id: number;
   homeTeam: NhlBoxscoreTeam;
   awayTeam: NhlBoxscoreTeam;
@@ -48,4 +64,19 @@ export type NhlBoxScore = {
     awayTeam: NhlBoxscorePlayers;
     homeTeam: NhlBoxscorePlayers;
   };
+};
+
+export type NhlGameGame = {
+  id: number;
+  gameState: string;
+};
+
+export type NhlGameGameWeek = {
+  date: string;
+  games: NhlGameGame[];
+};
+
+export type NhlGamesByDate = {
+  nextStartDate: string;
+  gameWeek: NhlGameGameWeek[];
 };

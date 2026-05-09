@@ -20,25 +20,7 @@ export class TeamsService {
     // Fetch from DB
     const teams = await this.prisma.team.findMany({
       orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        shortName: true,
-        abbreviation: true,
-        createdAt: true,
-
-        players: {
-          select: {
-            id: true,
-            nhlId: true,
-            fullName: true,
-            firstName: true,
-            lastName: true,
-            nationality: true,
-            playerType: true,
-          },
-        },
-      },
+      include: { players: true },
     });
 
     // Store in cache

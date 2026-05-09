@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios, { AxiosInstance } from "axios";
-import { NhlBoxScore } from "./nhl.types";
+import { NhlBoxscore, NhlGamesByDate, NhlNow } from "./nhl.types";
 
 @Injectable()
 export class NhlService {
@@ -27,7 +27,7 @@ export class NhlService {
   }
 
   async getTeams() {
-    const res = await this.http.get("/standings/now");
+    const res = await this.http.get<NhlNow>("/standings/now");
 
     if (!res.data || !res.data.standings) {
       throw new NotFoundException("No standings data found");
@@ -49,18 +49,14 @@ export class NhlService {
   }
 
   async getPlayersCurrentSeasonStats(playerId: number) {
-    const res = await this.http.get(`/player/${playerId}/landing`);
+    const { data } = await this.http.get(`/player/${playerId}/landing`);
 
-    // this.logger.log(
-    //   `Fetched player data for ${playerId}: ${JSON.stringify(res.data)}`,
-    // );
-
-    if (!res.data || !res.data.featuredStats) {
+    if (!data || !data.featuredStats) {
       throw new NotFoundException(`No stats found for player ${playerId}`);
     }
 
-    const currentSeason = res.data.featuredStats.season;
-    const currentSeasonStats = res.data.seasonTotals.find(
+    const currentSeason = data.featuredStats.season;
+    const currentSeasonStats = data.seasonTotals.find(
       (s: { season: string }) => s.season === currentSeason,
     );
 
@@ -79,27 +75,37 @@ export class NhlService {
     return currentSeasonStats;
   }
 
-  async getGameIdsByDate(date: string): Promise<string[]> {
-    const res = await this.http.get(`/schedule/${date}`);
+  async getGamesByDate(date: string): Promise<NhlBoxscore[]> {
+    const { data } = await this.http.get<NhlGamesByDate>(`/schedule/${date}`);
 
-    if (!res.data || !res.data.gameWeek) {
+    if (!data || !data.gameWeek) {
       throw new NotFoundException(`No games found for date ${date}`);
     }
 
-    const { games } = res.data.gameWeek.find(
+    const gameWeek = data.gameWeek.find(
       (gw: { date: string }) => gw.date === date,
     );
 
-    if ((!games || games.length === 0) && res.data.nextStartDate) {
-      // Get games from next date if no games found for the requested date
-      return await this.getGameIdsByDate(res.data.nextStartDate);
+    if (!gameWeek || gameWeek.games.length === 0) {
+      if (!data.nextStartDate) {
+        throw new NotFoundException(
+          `No games found for date ${date} and no next start date available`,
+        );
+      }
+
+      // Try to fetch games from next date if no games found for the requested date
+      return await this.getGamesByDate(data.nextStartDate);
     }
 
-    return games.map((game: { id: string }) => game.id);
+    return Promise.all(
+      gameWeek.games.map(async (game) => await this.getGameBoxscore(game.id)),
+    );
   }
 
-  async getGameBoxscore(gameId: string): Promise<NhlBoxScore> {
-    const res = await this.http.get(`/gamecenter/${gameId}/boxscore`);
+  async getGameBoxscore(gameId: number): Promise<NhlBoxscore> {
+    const res = await this.http.get<NhlBoxscore>(
+      `/gamecenter/${gameId}/boxscore`,
+    );
 
     if (!res.data) {
       throw new InternalServerErrorException(
