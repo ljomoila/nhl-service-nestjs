@@ -1,17 +1,18 @@
 import { Module, MiddlewareConsumer } from "@nestjs/common";
 import { LoggerModule } from "./modules/logger/logger.module";
 import { RequestContextMiddleware } from "./common/middlewares/request-context.middleware";
-import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ConfigModule } from "@nestjs/config";
 import { validate } from "./config/validate";
 import { NhlModule } from "./modules/integrations/nhl.module";
 import { TeamsModule } from "./modules/teams/teams.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { CacheModule } from "@nestjs/cache-manager";
-import { redisStore } from "cache-manager-redis-yet";
 import { SyncModule } from "./modules/sync/sync.module";
 import { PlayersModule } from "./modules/players/players.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { GamesModule } from "./modules/games/games.module";
+import { CacheInterceptor } from "./cache/cache.interceptor";
+import { APP_INTERCEPTOR } from "@nestjs/core";
 
 @Module({
   imports: [
@@ -19,19 +20,7 @@ import { GamesModule } from "./modules/games/games.module";
       isGlobal: true,
       validate,
     }),
-    CacheModule.registerAsync({
-      isGlobal: true,
-      inject: [ConfigService],
-      useFactory: async (config: ConfigService) => ({
-        store: await redisStore({
-          socket: {
-            host: config.get("REDIS_HOST", "localhost"),
-            port: config.get("REDIS_PORT", 6379),
-          },
-        }),
-        ttl: config.get<number>("CACHE_TTL_SECONDS") ?? 60,
-      }),
-    }),
+    CacheModule.register(),
     ScheduleModule.forRoot(),
     LoggerModule,
     PrismaModule,
@@ -40,6 +29,12 @@ import { GamesModule } from "./modules/games/games.module";
     SyncModule,
     PlayersModule,
     GamesModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CacheInterceptor,
+    },
   ],
 })
 export class AppModule {

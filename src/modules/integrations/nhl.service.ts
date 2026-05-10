@@ -6,7 +6,15 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios, { AxiosInstance } from "axios";
-import { NhlBoxscore, NhlGamesByDate, NhlNow } from "./nhl.types";
+import {
+  NhlBoxscore,
+  NhlGamesByDate,
+  NhlNow,
+  NhlPlayerSeasonStats,
+  NhlPlayerStats,
+  NhlTeam,
+  NhlTeamRoster,
+} from "./nhl.types";
 
 @Injectable()
 export class NhlService {
@@ -26,38 +34,50 @@ export class NhlService {
     });
   }
 
-  async getTeams() {
-    const res = await this.http.get<NhlNow>("/standings/now");
+  async getTeams(): Promise<NhlTeam[]> {
+    const { data } = await this.http.get<NhlNow>("/standings/now");
 
-    if (!res.data || !res.data.standings) {
-      throw new NotFoundException("No standings data found");
+    if (!data) {
+      throw new InternalServerErrorException("No data received from NHL API");
     }
 
-    return res.data.standings;
+    return data.standings;
   }
 
-  async getRoster(teamAbbreviation: string) {
-    const res = await this.http.get(`/roster/${teamAbbreviation}/current`);
+  async getRoster(teamAbbreviation: string): Promise<NhlTeamRoster> {
+    const { data } = await this.http.get<NhlTeamRoster>(
+      `/roster/${teamAbbreviation}/current`,
+    );
 
-    if (!res.data || !res.data.roster) {
-      throw new NotFoundException(
+    if (!data) {
+      throw new InternalServerErrorException(
         `No roster data found for team ${teamAbbreviation}`,
       );
     }
 
-    return res.data;
+    return data;
   }
 
-  async getPlayersCurrentSeasonStats(playerId: number) {
-    const { data } = await this.http.get(`/player/${playerId}/landing`);
+  async getPlayersCurrentSeasonStats(
+    playerId: number,
+  ): Promise<NhlPlayerStats> {
+    const { data } = await this.http.get<NhlPlayerSeasonStats>(
+      `/player/${playerId}/landing`,
+    );
 
-    if (!data || !data.featuredStats) {
+    if (!data) {
+      throw new InternalServerErrorException(
+        `No data received from NHL API for player ${playerId}`,
+      );
+    }
+
+    if (!data.featuredStats) {
       throw new NotFoundException(`No stats found for player ${playerId}`);
     }
 
     const currentSeason = data.featuredStats.season;
     const currentSeasonStats = data.seasonTotals.find(
-      (s: { season: string }) => s.season === currentSeason,
+      (s: NhlPlayerStats) => s.season === currentSeason,
     );
 
     if (!currentSeasonStats) {
@@ -66,19 +86,19 @@ export class NhlService {
       );
     }
 
-    this.logger.log(
-      `Current season stats for player ${playerId}: ${JSON.stringify(
-        currentSeasonStats,
-      )}`,
-    );
-
-    return currentSeasonStats;
+    return { ...currentSeasonStats, id: playerId };
   }
 
   async getGamesByDate(date: string): Promise<NhlBoxscore[]> {
     const { data } = await this.http.get<NhlGamesByDate>(`/schedule/${date}`);
 
-    if (!data || !data.gameWeek) {
+    if (!data) {
+      throw new InternalServerErrorException(
+        `No data received from NHL API for date ${date}`,
+      );
+    }
+
+    if (!data.gameWeek) {
       throw new NotFoundException(`No games found for date ${date}`);
     }
 
@@ -97,9 +117,14 @@ export class NhlService {
       return await this.getGamesByDate(data.nextStartDate);
     }
 
-    return Promise.all(
-      gameWeek.games.map(async (game) => await this.getGameBoxscore(game.id)),
+    const boxscores = await Promise.all(
+      gameWeek.games.map(async (game) => ({
+        ...(await this.getGameBoxscore(game.id)),
+        periodDescriptor: game.periodDescriptor,
+      })),
     );
+
+    return boxscores;
   }
 
   async getGameBoxscore(gameId: number): Promise<NhlBoxscore> {

@@ -3,6 +3,10 @@ import { IsNumber, IsString } from "class-validator";
 import { PlayerPosition } from "src/modules/integrations/nhl.types";
 
 export class GamePlayerStatsDTO {
+  @ApiProperty({ description: "Player's unique (NHL) identifier" })
+  @IsNumber()
+  id: number;
+
   @ApiProperty({ description: "Player's lastname e.g. 'Caufield'" })
   @IsString()
   name: string;
@@ -42,6 +46,10 @@ export class GameGoalieStatsDTO extends GamePlayerStatsDTO {
   @ApiProperty({ description: "Number of goals allowed by the goalie" })
   @IsNumber()
   goalsAgainst: number;
+
+  @ApiProperty({ description: "Goalie's save percentage" })
+  @IsNumber()
+  savePercentage: number;
 }
 
 export class GameTeamDTO {
@@ -64,8 +72,9 @@ export class GameTeamDTO {
   @ApiProperty({
     type: [GamePlayerStatsDTO],
     description: "List of players in the team",
+    required: false,
   })
-  players: GamePlayerStatsDTO[];
+  players?: GamePlayerStatsDTO[];
 }
 
 export class GameBoxscoreDTO {
@@ -74,12 +83,12 @@ export class GameBoxscoreDTO {
   gameId: number;
 
   @ApiProperty({ description: "Current period of the game" })
-  @IsNumber()
-  period: number;
+  @IsString()
+  period?: string;
 
   @ApiProperty({ description: "Time remaining in the current period" })
   @IsString()
-  timeRemaining: string;
+  timeRemaining?: string;
 
   @ApiProperty({ description: "Current status of the game" })
   @IsString()

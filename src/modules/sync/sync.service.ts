@@ -22,7 +22,7 @@ export class SyncService implements OnModuleInit {
 
     if (teams.length === 0) {
       this.logger.log("No teams found in database, performing initial sync...");
-      await this.doTeamsSync();
+      await this.syncRosters();
     }
   }
 
@@ -32,23 +32,25 @@ export class SyncService implements OnModuleInit {
    * and allows us to have all the necessary data for our application without having to make multiple API calls on a per-game basis.
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async syncTeams(): Promise<void> {
+  async syncRosters(): Promise<void> {
     const startTime = new Date();
     try {
-      this.logger.log("Starting teams sync...");
-      await this.doTeamsSync();
+      this.logger.log("Starting rosters sync...");
+      await this.doRostersSync();
     } catch (error) {
-      this.logger.error({ message: "Error syncing teams:", error });
+      this.logger.error({ message: "Error syncing rosters:", error });
     } finally {
       const endTime = new Date();
       const duration = endTime.getTime() - startTime.getTime();
-      this.logger.log(`Teams sync completed in ${duration}ms`);
+      this.logger.log(`Rosters sync completed in ${duration}ms`);
     }
   }
 
-  private async doTeamsSync() {
+  private async doRostersSync() {
     const teams = await this.nhlService.getTeams();
     const prismaTeams: Team[] = [];
+    let teamsSynced = 0;
+    let playersSynced = 0;
 
     for (const team of teams) {
       // this.logger.log(`Processing team: ${JSON.stringify(team)}`);
@@ -67,6 +69,7 @@ export class SyncService implements OnModuleInit {
           },
         }),
       );
+      teamsSynced++;
     }
 
     for (const team of prismaTeams) {
@@ -80,7 +83,7 @@ export class SyncService implements OnModuleInit {
         const firstName = player.firstName["default"];
         const lastName = player.lastName["default"];
         const playerType =
-          player in ["goalies"] ? PlayerType.Goalie : PlayerType.Skater;
+          player.positionCode !== "G" ? PlayerType.Skater : PlayerType.Goalie;
 
         await this.prisma.player.upsert({
           where: { nhlId: player.id },
@@ -102,7 +105,12 @@ export class SyncService implements OnModuleInit {
             teamId: team.abbreviation,
           },
         });
+        playersSynced++;
       }
     }
+
+    this.logger.log(
+      `Teams synced: ${teamsSynced}, Players synced: ${playersSynced}`,
+    );
   }
 }

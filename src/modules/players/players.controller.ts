@@ -6,8 +6,10 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
 } from "@nestjs/swagger";
+import { CacheTTL } from "@nestjs/cache-manager";
 
 @Controller("players")
+@CacheTTL(3600) // Cache for 1 hour
 export class PlayersController {
   constructor(private readonly playersService: PlayersService) {}
 

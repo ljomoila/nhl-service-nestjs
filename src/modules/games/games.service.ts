@@ -5,10 +5,10 @@ import {
   GameGoalieStatsDTO,
   GamePlayerStatsDTO,
   GameTeamDTO,
-} from "./dto/games";
+} from "./dto/games.dto";
 import { PrismaService } from "src/prisma/prisma.service";
 import {
-  NhlBoxscore,
+  NhlBoxscoreGoalieStats,
   NhlBoxscorePlayers,
   NhlBoxscorePlayerStats,
   NhlBoxscoreTeam,
@@ -26,27 +26,31 @@ export class GamesService {
 
     const gamesWithBoxScore: GameBoxscoreDTO[] = [];
     for (const game of games) {
-      const gameBoxscore = this.buildGameBoxscoreDTO(game) as GameBoxscoreDTO;
+      const gameBoxscore = new GameBoxscoreDTO();
+      gameBoxscore.gameId = game.id;
+      gameBoxscore.period =
+        game.periodDescriptor.periodType === "OT"
+          ? `OT`
+          : `${game.periodDescriptor.number}`;
+      gameBoxscore.timeRemaining = game.clock?.timeRemaining ?? "00:00";
+      gameBoxscore.status = game.gameState;
+
       gameBoxscore.homeTeam = await this.buildTeamDTO(game.homeTeam);
-      gameBoxscore.homeTeam.players = await this.buildTeamPlayers(
-        game.playerByGameStats.homeTeam,
-      );
       gameBoxscore.awayTeam = await this.buildTeamDTO(game.awayTeam);
-      gameBoxscore.awayTeam.players = await this.buildTeamPlayers(
-        game.playerByGameStats.awayTeam,
-      );
+
+      if (game.playerByGameStats) {
+        gameBoxscore.homeTeam.players = await this.buildTeamPlayers(
+          game.playerByGameStats.homeTeam,
+        );
+        gameBoxscore.awayTeam.players = await this.buildTeamPlayers(
+          game.playerByGameStats.awayTeam,
+        );
+      }
+
       gamesWithBoxScore.push(gameBoxscore);
     }
 
     return gamesWithBoxScore;
-  }
-
-  private buildGameBoxscoreDTO(game: NhlBoxscore): Partial<GameBoxscoreDTO> {
-    return {
-      gameId: game.id,
-      period: game.gameState === "Final" ? 3 : 1,
-      timeRemaining: game.clock.timeRemaining,
-    };
   }
 
   private async buildTeamDTO(nhlTeam: NhlBoxscoreTeam): Promise<GameTeamDTO> {
@@ -70,15 +74,9 @@ export class GamesService {
         continue; // Skip players without points
       }
 
-      const playerStats = this.buildPlayerStatsDTO(player);
-
-      const prismaPlayer = await this.prismaService.player.findUnique({
-        where: { nhlId: player.playerId },
-      });
-      playerStats.country = prismaPlayer?.nationality || "Unknown";
-      playerStats.name = prismaPlayer?.lastName || player.name.default;
-
-      playersWithStats.push(playerStats);
+      playersWithStats.push(
+        (await this.buildPlayerStatsDTO(player)) as GamePlayerStatsDTO,
+      );
     }
 
     for (const goalie of players.goalies) {
@@ -86,35 +84,53 @@ export class GamesService {
         continue; // Skip goalies without stats
       }
 
-      const goalieStats = this.buildPlayerStatsDTO(
-        goalie,
-      ) as GameGoalieStatsDTO;
-      goalieStats.toi = goalie.toi;
-      goalieStats.saves = goalie.saves;
-      goalieStats.shotsAgainst = goalie.shotsAgainst;
-      goalieStats.goalsAgainst = goalie.goalsAgainst;
-
-      const prismaGoalie = await this.prismaService.player.findUnique({
-        where: { nhlId: goalie.playerId },
-      });
-      goalieStats.country = prismaGoalie?.nationality || "Unknown";
-      goalieStats.name = prismaGoalie?.lastName || goalie.name.default;
-
-      playersWithStats.push(goalieStats);
+      playersWithStats.push(
+        (await this.buildGoalieStatsDTO(goalie)) as GameGoalieStatsDTO,
+      );
     }
 
     return playersWithStats;
   }
 
-  private buildPlayerStatsDTO(
+  private async buildPlayerStatsDTO(
     player: NhlBoxscorePlayerStats,
-  ): GamePlayerStatsDTO | GameGoalieStatsDTO {
+  ): Promise<Partial<GamePlayerStatsDTO | GameGoalieStatsDTO>> {
     return {
+      id: player.playerId,
       name: player.name.default,
       position: player.position,
       goals: player.goals,
       assists: player.assists,
-      country: "Unknown", // Placeholder, will be updated with actual country
+      ...(await this.buildPlayerDetailsFromDB(player.playerId)),
+    };
+  }
+
+  private async buildGoalieStatsDTO(
+    goalie: NhlBoxscoreGoalieStats,
+  ): Promise<Partial<GameGoalieStatsDTO>> {
+    return {
+      ...(await this.buildPlayerStatsDTO(goalie)),
+      toi: goalie.toi,
+      saves: goalie.saves,
+      shotsAgainst: goalie.shotsAgainst,
+      goalsAgainst: goalie.goalsAgainst,
+      savePercentage: (goalie.saves / goalie.shotsAgainst) * 100,
+    };
+  }
+
+  /**
+   * Fetches additional player details from the database to enrich the stats DTO.
+   */
+  private async buildPlayerDetailsFromDB(
+    playerId: number,
+  ): Promise<Partial<GamePlayerStatsDTO>> {
+    const prismaPlayer = await this.prismaService.player.findUnique({
+      where: { nhlId: playerId },
+    });
+
+    return {
+      country: prismaPlayer?.nationality || "Unknown",
+      name: prismaPlayer?.lastName || "Unknown",
     };
   }
 }

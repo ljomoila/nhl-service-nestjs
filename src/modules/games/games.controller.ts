@@ -6,7 +6,8 @@ import {
   ApiOkResponse,
 } from "@nestjs/swagger";
 import { GamesService } from "./games.service";
-import { GameBoxscoreDTO } from "./dto/games";
+import { GameBoxscoreDTO } from "./dto/games.dto";
+import { CacheTTL } from "@nestjs/cache-manager";
 
 @Controller("games")
 export class GamesController {
@@ -19,6 +20,7 @@ export class GamesController {
   })
   @ApiNotFoundResponse({ description: "No games found for the specified date" })
   @ApiInternalServerErrorResponse()
+  @CacheTTL(60) // Cache the response for 1 minute
   async getGamesByDate(
     @Param("date") date: string,
   ): Promise<GameBoxscoreDTO[]> {

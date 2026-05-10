@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PlayerDTO, PlayerWithSeasonStatsDTO } from "./dto/player.dto";
 import { NhlService } from "src/modules/integrations/nhl.service";
 import { PrismaService } from "src/prisma/prisma.service";
+import { NhlPlayerStats } from "../integrations/nhl.types";
 
 @Injectable()
 export class PlayersService {
@@ -10,19 +11,57 @@ export class PlayersService {
     private readonly prismaService: PrismaService,
   ) {}
 
-  async getPlayers(): Promise<PlayerDTO[]> {
+  public async getPlayers(): Promise<PlayerDTO[]> {
     return await this.prismaService.player.findMany();
   }
 
-  async getPlayer(playerId: number): Promise<PlayerDTO | null> {
+  public async getPlayer(playerId: number): Promise<PlayerDTO | null> {
     return await this.prismaService.player.findUniqueOrThrow({
       where: { nhlId: playerId },
     });
   }
 
-  async getCurrentSeasonStats(
+  public async getCurrentSeasonStats(
     nhlId: number,
   ): Promise<PlayerWithSeasonStatsDTO> {
-    return await this.nhlService.getPlayersCurrentSeasonStats(nhlId);
+    const nhlStats = await this.nhlService.getPlayersCurrentSeasonStats(nhlId);
+
+    return await this.buildPlayerWithSeasonStatsDTO(nhlStats);
+  }
+
+  private async buildPlayerWithSeasonStatsDTO(
+    stats: NhlPlayerStats,
+  ): Promise<PlayerWithSeasonStatsDTO> {
+    const prismaPlayer = await this.prismaService.player.findUniqueOrThrow({
+      where: { nhlId: stats.id },
+    });
+
+    return {
+      id: prismaPlayer.id,
+      nhlId: stats.id,
+      fullName: prismaPlayer.fullName,
+      firstName: prismaPlayer.firstName,
+      lastName: prismaPlayer.lastName,
+      playerType: prismaPlayer.playerType,
+      nationality: prismaPlayer.nationality,
+      position: stats.position,
+      gamesPlayed: stats.gamesPlayed,
+      goals: stats.goals,
+      assists: stats.assists,
+      points: stats.points,
+      plusMinus: stats.plusMinus,
+      pim: stats.pim,
+      powerPlayGoals: stats.powerPlayGoals,
+      powerPlayPoints: stats.powerPlayPoints,
+      shorthandedGoals: stats.shorthandedGoals,
+      shorthandedPoints: stats.shorthandedPoints,
+      shootingPctg: stats.shootingPctg,
+      avgToi: stats.avgToi,
+      faceoffWinningPctg: stats.faceoffWinningPctg,
+      gameWinningGoals: stats.gameWinningGoals,
+      otGoals: stats.otGoals,
+      penaltyMinutes: stats.pim,
+      shots: stats.shots,
+    };
   }
 }
