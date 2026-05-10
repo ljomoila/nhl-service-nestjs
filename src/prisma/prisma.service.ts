@@ -1,8 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@prisma/client";
-import path from "path";
-import fs from "fs";
 
 @Injectable()
 export class PrismaService
@@ -10,15 +8,12 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    const dbPath = path.resolve(process.cwd(), "prisma", "dev.db");
+    const dbPath =
+      process.env.DATABASE_URL?.replace("file:", "") ?? "/data/prod.db";
 
-    if (!fs.existsSync(dbPath)) {
-      throw new Error(
-        `❌ DB FILE NOT FOUND at: ${dbPath}. Please ensure the database file exists and the path is correct.`,
-      );
-    }
-
-    const adapter = new PrismaBetterSqlite3({ url: dbPath });
+    const adapter = new PrismaBetterSqlite3({
+      url: dbPath,
+    });
 
     super({ adapter });
   }

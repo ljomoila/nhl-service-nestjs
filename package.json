@@ -5,7 +5,7 @@
   "author": "Joonas Moilanen",
   "license": "MIT",
   "scripts": {
-    "start": "node dist/main.js",
+    "start": "node dist/src/main.js",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "build": "nest build",
@@ -18,8 +18,7 @@
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:deploy": "npx prisma migrate deploy",
     "prisma:studio": "npx prisma studio",
-    "db:reset": "npx prisma migrate reset",
-    "postinstall": "npx prisma generate"
+    "db:reset": "npx prisma migrate reset"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.1.2",
