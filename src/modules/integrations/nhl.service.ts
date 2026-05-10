@@ -107,24 +107,17 @@ export class NhlService {
     );
 
     if (!gameWeek || gameWeek.games.length === 0) {
-      if (!data.nextStartDate) {
-        throw new NotFoundException(
-          `No games found for date ${date} and no next start date available`,
-        );
-      }
-
-      // Try to fetch games from next date if no games found for the requested date
-      return await this.getGamesByDate(data.nextStartDate);
+      throw new NotFoundException(
+        `No games found for date ${date} and no next start date available`,
+      );
     }
 
-    const boxscores = await Promise.all(
+    return await Promise.all(
       gameWeek.games.map(async (game) => ({
         ...(await this.getGameBoxscore(game.id)),
         periodDescriptor: game.periodDescriptor,
       })),
     );
-
-    return boxscores;
   }
 
   async getGameBoxscore(gameId: number): Promise<NhlBoxscore> {
