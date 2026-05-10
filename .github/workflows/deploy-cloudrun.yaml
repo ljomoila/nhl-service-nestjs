@@ -9,7 +9,6 @@ env:
   SERVICE_NAME: nhl-api-nestjs
   REGION: europe-west3
   REPO: nhl-repo
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
 jobs:
   deploy:
@@ -27,8 +26,9 @@ jobs:
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker for GCP
-        run: gcloud auth configure-docker
+      - name: Configure Docker auth for Artifact Registry
+        run: |
+          gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
 
       - name: Build Docker image
         run: |
@@ -45,4 +45,4 @@ jobs:
             --region $REGION \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars DATABASE_URL=$DATABASE_URL
+            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }}"
