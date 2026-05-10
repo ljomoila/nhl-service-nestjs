@@ -4,6 +4,7 @@ import { ValidationPipe } from "@nestjs/common";
 import { Logger } from "nestjs-pino";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 import { setupSwagger } from "./swagger/swagger";
+import { ApiKeyGuard } from "./guards/api-key.guard";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -13,6 +14,8 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   app.useGlobalFilters(new AllExceptionsFilter());
+
+  app.useGlobalGuards(new ApiKeyGuard());
 
   setupSwagger(app);
 
