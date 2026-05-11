@@ -20,4 +20,4 @@ RUN mkdir -p /data
 EXPOSE 3000
 
 #CMD ["npm", "start"]
-CMD ["sh", "-c", "npm run prisma:migrate && node dist/src/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
