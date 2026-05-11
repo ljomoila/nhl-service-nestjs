@@ -62,5 +62,3 @@ coverage/
 # =========================
 docker-compose.override.yml
 /generated/prisma
-
-undefined

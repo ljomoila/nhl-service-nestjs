@@ -8,8 +8,13 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    const dbPath =
-      process.env.DATABASE_URL?.replace("file:", "") ?? "/data/prod.db";
+    const dbPath = process.env.DATABASE_URL?.replace("file:", "");
+
+    if (!dbPath) {
+      throw new Error(
+        "DATABASE_URL must be configured in environment variables",
+      );
+    }
 
     const adapter = new PrismaBetterSqlite3({
       url: dbPath,
