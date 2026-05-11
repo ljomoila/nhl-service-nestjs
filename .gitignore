@@ -30,10 +30,6 @@ yarn-error.log*
 # =========================
 prisma/dev.db
 prisma/dev.db-journal
-prisma/migrations/
-
-# (optional: keep migrations if using production)
-# prisma/migrations/
 
 # =========================
 # OS files
@@ -61,4 +57,3 @@ coverage/
 # Docker
 # =========================
 docker-compose.override.yml
-/generated/prisma
