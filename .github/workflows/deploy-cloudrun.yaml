@@ -45,4 +45,5 @@ jobs:
             --region $REGION \
             --platform managed \
             --allow-unauthenticated \
+            --min-instances 1 \
             --set-env-vars "DATABASE_URL=file:/tmp/prod.db,API_KEY=${{ secrets.API_KEY }}"
